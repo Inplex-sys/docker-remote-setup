@@ -5,19 +5,39 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Define colors and safer character representations
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 CYAN='\033[0;36m'
 NC='\033[0m'
-CHECKMARK='\xE2\x9C\x94'
-INFO='\xE2\x84\xB9'
-ERROR='\xE2\x9C\x96'
-GEAR='\xF0\x9F\x94\xA7'
-LOCK='\xF0\x9F\x94\x92'
-ROCKET='\xF0\x9F\x9A\x80'
-GLOBE='\xF0\x9F\x8C\x8D'
+
+# Use simpler symbols that work across most terminals
+CHECKMARK='✓'
+INFO='i'
+ERROR='✗'
+GEAR='*'
+LOCK='+'
+ROCKET='>'
+GLOBE='@'
+
+# Check if terminal supports Unicode emojis
+if [ -t 1 ] && [ "$(locale charmap 2>/dev/null)" = "UTF-8" ]; then
+    # Try to use emoji if terminal supports it
+    tput sc
+    echo -e '\xF0\x9F\x94\x92' > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        CHECKMARK='\xE2\x9C\x94'
+        INFO='\xE2\x84\xB9'
+        ERROR='\xE2\x9C\x96'
+        GEAR='\xF0\x9F\x94\xA7'
+        LOCK='\xF0\x9F\x94\x92'
+        ROCKET='\xF0\x9F\x9A\x80'
+        GLOBE='\xF0\x9F\x8C\x8D'
+    fi
+    tput rc
+fi
 
 print_message() {
     local message=$1
@@ -31,21 +51,22 @@ get_input() {
     local default=$2
     local value=""
     
-    echo -e "${CYAN}${GLOBE} $prompt ${NC}(default: ${YELLOW}$default${NC}):"
-    read value
+    echo -ne "${CYAN}${GLOBE} $prompt ${NC}(default: ${YELLOW}$default${NC}): "
+    read -r value
     
     if [ -z "$value" ]; then
         value=$default
     fi
     
-    echo $value
+    echo "$value"
 }
 
 echo -e "\n${BLUE}=========================================================${NC}"
-print_message "Docker TLS Certificate Generation Utility" $BLUE $LOCK
-print_message "Please provide the following information:" $BLUE $INFO
+print_message "Docker TLS Certificate Generation Utility" $BLUE "$LOCK"
+print_message "Please provide the following information:" $BLUE "$INFO"
 echo -e "${BLUE}=========================================================${NC}\n"
 
+# Get user input for variables
 SERVER_NAME=$(get_input "Enter server hostname" "docker-server")
 SERVER_ALIAS=$(get_input "Enter server alias (alternative hostname)" "docker")
 SERVER_IP=$(get_input "Enter server IP address" "192.168.1.100")
